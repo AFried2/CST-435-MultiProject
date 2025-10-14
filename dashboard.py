@@ -34,7 +34,6 @@ def stop_process(name: str):
         del st.session_state.processes[name]
         st.success(f"Stopped {name}.")
         time.sleep(0.5) # Give Streamlit time to re-render
-        st.rerun()
 
 def start_process(name: str, path: Path, port: int):
     """Starts a new Streamlit app process."""
@@ -65,7 +64,6 @@ def start_process(name: str, path: Path, port: int):
     st.session_state.processes[name] = proc
     st.success(f"Starting {name} on port {port}...")
     time.sleep(1) # Give the process a moment to start up
-    st.rerun()
 
 # --- Main App ---
 
