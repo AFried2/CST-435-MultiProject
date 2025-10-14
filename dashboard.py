@@ -75,79 +75,50 @@ st.set_page_config(page_title="Projects Dashboard", page_icon="🗂️", layout=
 if "processes" not in st.session_state:
     st.session_state.processes = {}
 
-# --- Cloud Mode (Deployed Apps) ---
-# Checks for APP_URLS in Streamlit secrets to link to deployed apps.
-try:
-    # Safely get secrets
-    APP_URLS = dict(st.secrets.get("APP_URLS", {}))
-except Exception:
-    APP_URLS = {}
-CLOUD_MODE = bool(APP_URLS)
-
 
 st.title("🗂️ Projects Dashboard")
+st.info("🖥️ Local mode: Launching applications on this machine.")
 
-if CLOUD_MODE:
-    st.info("☁️ Cloud mode: Linking to pre-deployed applications.")
+# Dynamically find projects
+projects = get_project_paths(ROOT_DIRECTORY)
+
+if not projects:
+    st.warning(
+        "No projects found! "
+        f"Create a folder in this directory ('{ROOT_DIRECTORY}') and add an 'app.py' file to it."
+    )
+else:
+    st.header("Available Projects", divider="rainbow")
     
-    project_names = sorted(APP_URLS.keys())
+    sorted_projects = sorted(projects.items())
     
-    for name in project_names:
-        url = APP_URLS.get(name)
+    for idx, (name, path) in enumerate(sorted_projects):
+        port = BASE_PORT + idx
+        
         with st.container(border=True):
-            col1, col2 = st.columns([1, 3])
+            col1, col2, col3 = st.columns([2, 3, 2])
+            
             with col1:
                 st.subheader(name)
-                st.link_button("Open App ↗️", url)
-            with col2:
-                st.caption(f"URL: `{url}`")
-
-    st.divider()
-    st.caption("Configure `[APP_URLS]` in Streamlit secrets to manage links.")
-
-# --- Local Mode (Running Apps Locally) ---
-else:
-    st.info("🖥️ Local mode: Launching applications on this machine.")
-    
-    # Dynamically find projects
-    projects = get_project_paths(ROOT_DIRECTORY)
-
-    if not projects:
-        st.warning(
-            "No projects found! "
-            f"Create a folder in this directory ('{ROOT_DIRECTORY}') and add an 'app.py' file to it."
-        )
-    else:
-        st.header("Available Projects", divider="rainbow")
-        
-        sorted_projects = sorted(projects.items())
-        
-        for idx, (name, path) in enumerate(sorted_projects):
-            port = BASE_PORT + idx
             
-            with st.container(border=True):
-                col1, col2, col3 = st.columns([2, 3, 2])
-                
-                with col1:
-                    st.subheader(name)
-                
-                proc = st.session_state.processes.get(name)
-                is_running = proc and proc.poll() is None
-                
-                with col2:
-                    if is_running:
-                        st.success(f"✅ Running on port {port}")
-                        url = f"http://localhost:{port}"
-                        st.markdown(f"**[Open {name} ↗️]({url})**")
-                    else:
-                        st.info("⚪ Stopped")
-                        
-                with col3:
-                    if is_running:
-                        st.button("Stop App", key=f"stop_{name}", on_click=stop_process, args=(name,), type="primary")
-                    else:
-                        st.button("Start App", key=f"start_{name}", on_click=start_process, args=(name, path, port))
+            proc = st.session_state.processes.get(name)
+            is_running = proc and proc.poll() is None
+            
+            with col2:
+                if is_running:
+                    st.success(f"✅ Running on port {port}")
+                    url = f"http://localhost:{port}"
+                    st.markdown(f"**[Open {name} ↗️]({url})**")
+                else:
+                    st.info("⚪ Stopped")
+                    
+            with col3:
+                if is_running:
+                    st.button("Stop App", key=f"stop_{name}", on_click=stop_process, args=(name,), type="primary")
+                else:
+                    st.button("Start App", key=f"start_{name}", on_click=start_process, args=(name, path, port))
 
 
-    st.divider()
-    st.caption("Each project is a standalone Streamlit app inside its own folder.")
+st.divider()
+st.caption("Each project is a standalone Streamlit app inside its own folder.")
+
